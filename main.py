@@ -52,7 +52,7 @@ with open('data/rf3.txt', 'w') as f:
 
 print("TRAIN")
 
-X_train2, X_test2, y_train2, y_test2 = train_test_split(X_train, y_train, test_size=0.33, random_state=42)
+X_train2, X_test2, y_train2, y_test2 = train_test_split(X_train, y_train, test_size=0.33, random_state=10)
 rf = RandomForestRegressor(n_estimators = 100, random_state = 42)
 rf.fit(X_train2, y_train2)
 evaluation(rf, X_test2, y_test2)
