@@ -5,11 +5,12 @@ from sklearn.model_selection import RandomizedSearchCV
 
 from tools import *
 from os.path import exists
+import os
 import pickle
 
 
 
-def random_search(n_iter = 100, cv = 3, filename = "/output/evaluation_numberized", data = "data/train.csv", debug = True) :
+def random_search(n_iter = 100, cv = 3, filename = "evaluation_numberized", data = "data/train.csv", debug = True) :
     """
         Process a random search process
 
@@ -30,22 +31,22 @@ def random_search(n_iter = 100, cv = 3, filename = "/output/evaluation_numberize
     if debug :
         print("\n==== CREATING NUMBERIZED DATA ====")
 
-    file_exists = exists(filename)
+    file_exists = exists(os.path.dirname(__file__) + "/output/" + filename)
     if file_exists :
         if debug :
-            print("    --> numberized data already exist (Path : {})".format(filename))
+            print("    --> numberized data already exist (Path : {})".format(os.path.dirname(__file__) + "/output/" + filename))
 
-        f = open(filename, 'rb')
+        f = open(os.path.dirname(__file__) + "/output/" + filename, 'rb')
         data_numberized = pickle.load(f)
         f.close()
     else :
         if debug :
-            print("    --> numberizing ... and saving at path {}...".format(filename))
+            print("    --> numberizing ... and saving at path {}...".format(os.path.dirname(__file__) + "/output/" + filename))
 
         data_numberized = pd.read_csv(data)
         data_numberized = numberize_features(data_numberized)
 
-        with open(filename, 'wb') as f :
+        with open(os.path.dirname(__file__) + "/output/" + filename, 'wb') as f :
             pickle.dump(data_numberized, f)
 
     X = data_numberized.drop(['retweets_count'], axis = 1, inplace = False )

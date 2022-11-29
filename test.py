@@ -1,11 +1,14 @@
 from textblob import TextBlob
 import sys
+import os
+from os.path import exists
 
 
 
 if __name__ == "__main__":
-    text = " ".join(sys.argv[1:])
+    print(os.path.dirname(__file__))
+    filename = "plot_results.png"
 
-    print("Texte : {}".format(text))
-    print("="*30)
-    print( "Subjectivity : {} ; Polarity : {}".format( TextBlob(text).sentiment.subjectivity , TextBlob(text).sentiment.polarity) )
+    file_exists = exists(os.path.dirname(__file__) + "/output/" + filename)
+
+    print(file_exists)
