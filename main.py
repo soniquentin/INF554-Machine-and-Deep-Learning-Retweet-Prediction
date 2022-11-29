@@ -9,7 +9,7 @@ import pickle
 
 
 
-def random_search(n_iter = 100, cv = 3, filename = "evaluation_numberized", data = "data/train.csv", debug = True) :
+def random_search(n_iter = 100, cv = 3, filename = "/output/evaluation_numberized", data = "data/train.csv", debug = True) :
     """
         Process a random search process
 
