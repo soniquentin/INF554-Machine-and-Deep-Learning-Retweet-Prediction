@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
+
 train_file = "data/train.csv"
 
 list_of_features = ["text",
@@ -23,5 +24,5 @@ X_train.drop(columns = ["text", "urls", "mentions", "hashtags", "TweetID"], inpl
 
 
 #sns.distplot(X_train['retweets_count'])
-sns.pairplot(X_train.head(10000))
+sns.pairplot(X_train.head(100000))
 plt.savefig('plot_result.png', dpi = 300)
