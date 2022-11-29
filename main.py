@@ -9,10 +9,16 @@ import os
 import pickle
 
 
+def simple_train_example(X,y) :
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
+    rf = RandomForestRegressor(n_estimators = 100, random_state = 42)
+    rf.fit(X_train, y_train)
+    evaluation(rf, X_test, y_test)
 
-def random_search(n_iter = 100, cv = 3, filename = "evaluation_numberized", data = "data/train.csv", debug = True) :
+
+def random_search(n_iter = 100, cv = 3, filename = "evaluation_numberized", data = "data/train.csv", save_model = True, model_name = "rf", debug = True) :
     """
-        Process a random search process
+        Process a random search process and return (+ save) the model
 
         INPUT :
             n_iter : Number of combinations tested
@@ -81,38 +87,33 @@ def random_search(n_iter = 100, cv = 3, filename = "evaluation_numberized", data
     rs.fit(X, y)
 
     if debug :
-        print("\n==== RESULT====")
+        print("\n==== RESULT ====")
         print("    --> best parameters :", rs.best_params_)
+
+    if save_model :
+        if debug :
+            print("\n==== SAVE MODEL ====")
+            print("    --> best parameters :", rs.best_params_)
+        with open(os.path.dirname(__file__) + "/output/" + model_name, 'wb') as f :
+            pickle.dump(rs.best_estimator_, f)
+
 
     return rs.best_estimator_ #Return the best estimator rf_best
 
 
-"""
-X_test = numberize_features(X_test)
+def write_prediction(X, filename = "rf_pred") :
+    """
 
-print("TRAIN")
-rf = RandomForestRegressor(n_estimators = 100, random_state = 42)
-rf.fit(X_train, y_train)
+    """
+    predictions = rf.predict(X)
 
-print("PREDICT")<
-predictions = rf.predict(X_test)
+    X["predictions"] = predictions
 
-X_test["predictions"] = predictions
+    with open('data/rf3.txt', 'w') as f:
+        f.write('TweetID,retweets_count\n')
+        for index, row in X.iterrows():
+            f.write('{},{}\n'.format(row["TweetID"], int(row["predictions"]) ))
 
-with open('data/rf3.txt', 'w') as f:
-    f.write('TweetID,retweets_count\n')
-    for index, row in X_test.iterrows():
-        f.write('{},{}\n'.format(row["TweetID"], int(row["predictions"]) ))
-"""
-
-"""
-print("TRAIN")
-
-X_train2, X_test2, y_train2, y_test2 = train_test_split(X_train, y_train, test_size=0.33, random_state=42)
-rf = RandomForestRegressor(n_estimators = 100, random_state = 42)
-rf.fit(X_train2, y_train2)
-evaluation(rf, X_test2, y_test2)
-"""
 
 
 if __name__ == "__main__":
