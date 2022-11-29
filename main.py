@@ -1,30 +1,54 @@
 from sklearn.ensemble import RandomForestRegressor
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import RandomizedSearchCV
+
 from tools import *
+from os.path import exists
+import pickle
 
 
 
-train_file = "data/train.csv"
-test_file = "data/evaluation.csv"
+def random_search(n_iter = 100, cv = 3, filename = "evaluation_numberized", data = "data/train.csv") :
+    file_exists = exists(filename)
+    if file_exists :
+        f = open(filename, 'rb')
+        data_numberized = pickle.load(f)
+        f.close()
+    else :
+        data_numberized = pd.read_csv(data)
+        data_numberized = numberize_features(data_numberized)
 
-X_test =  pd.read_csv(test_file)
+        with open(filename, 'wb') as f :
+            pickle.dump(data_numberized, f)
 
-X_train = pd.read_csv(train_file)
-y_train = X_train["retweets_count"]
-##X_train.drop(['retweets_count'], axis = 1, inplace = True )
+    X = data_numberized.drop(['retweets_count'], axis = 1, inplace = False )
+    y = data_numberized["retweets_count"]
 
-"""
-print("NUMBERIZE")
-X_train = numberize_features(X_train)
-"""
+    #Param grid
+    param_grid = {
+    'n_estimators': [100*i for i in range(1,21)], # the number of trees in the forest
+    'max_features': ['auto', 'sqrt'], # number of features to consider at every split
+    'max_depth' : [10*i for i in range(1,11)], # maximum number of levels in tree
+    'min_samples_split' : [2, 5, 10], # the minimum number of samples required to split an internal node
+    'min_samples_leaf' : [1, 2, 4], # the minimum number of samples required to be at a leaf node
+    'bootstrap' : [True, False] # Whether bootstrap samples are used when building trees
+    }
+
+    rf = RandomForestClassifier()
+
+    rs = RandomizedSearchCV(estimator = rf,
+                param_distributions = param_grid,
+                n_iter = 100, #Number of combinations tested
+                cv = 3, #number of folds to use for cross validation (more cv folds reduces the chances of overfitting)
+                verbose = 2, #Quantity of msg print
+                random_state = 42, #Pseudo random number generator state used for random uniform sampling
+                n_jobs = -1) #Number of jobs to run in parallel. None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.
 
 
-print("Sentiment preccessing")
-X_train = sentiment_processing(X_train, "text")
-print("Plotting")
-plot(X_train)
+    print("Best parameters : ", rs.best_params_)
+
+    return rs.best_estimator_ #Return the best estimator rf_best
 
 
 """
@@ -53,3 +77,7 @@ rf = RandomForestRegressor(n_estimators = 100, random_state = 42)
 rf.fit(X_train2, y_train2)
 evaluation(rf, X_test2, y_test2)
 """
+
+
+if __name__ == "__main__":
+    random_search()

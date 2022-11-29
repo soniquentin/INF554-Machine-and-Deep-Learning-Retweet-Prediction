@@ -3,9 +3,15 @@ from textblob_fr import PatternTagger, PatternAnalyzer
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error
 
 
 def numberize_features(X):
+    """
+        X_train = numberize_features(X_train)
+        X_test = numberize_features(X_test)
+    """
+
     for index, row in X.iterrows():
 
         for col in X.columns :
@@ -17,6 +23,9 @@ def numberize_features(X):
 
 
 def evaluation(rf, X_test, y_test):
+    """
+        evaluation(rf, X_test, y_test)
+    """
     pred = rf.predict(X_test)
     for i in range(len(pred)):
         pred[i] = round(pred[i])
