@@ -61,7 +61,7 @@ def random_search(n_iter = 100, cv = 3, filename = "evaluation_numberized", data
     #Param grid
     param_grid = {
     'n_estimators': [100*i for i in range(1,21)], # the number of trees in the forest
-    'max_features': ['log2', 'sqrt', None], # number of features to consider at every split
+    'max_features': ['log2', 'sqrt', 1.0], # number of features to consider at every split
     'max_depth' : [10*i for i in range(1,11)], # maximum number of levels in tree
     'min_samples_split' : [2, 5, 10], # the minimum number of samples required to split an internal node
     'min_samples_leaf' : [1, 2, 4], # the minimum number of samples required to be at a leaf node
@@ -73,8 +73,8 @@ def random_search(n_iter = 100, cv = 3, filename = "evaluation_numberized", data
 
     rs = RandomizedSearchCV(estimator = rf,
                 param_distributions = param_grid,
-                n_iter = 100, #Number of combinations tested
-                cv = 3, #number of folds to use for cross validation (more cv folds reduces the chances of overfitting)
+                n_iter = n_iter, #Number of combinations tested
+                cv = cv, #number of folds to use for cross validation (more cv folds reduces the chances of overfitting)
                 verbose = 2, #Quantity of msg print
                 random_state = 42, #Pseudo random number generator state used for random uniform sampling
                 n_jobs = -1) #Number of jobs to run in parallel. None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.
@@ -101,15 +101,22 @@ def random_search(n_iter = 100, cv = 3, filename = "evaluation_numberized", data
     return rs.best_estimator_ #Return the best estimator rf_best
 
 
-def write_prediction(X, filename = "rf_pred") :
+def write_prediction(rf, X, filename = "rf_pred.txt") :
     """
+        Create the file for submission
 
+        INPUT :
+            rf : estimator
+            X : Features of retweet to predict
+            file : the text file name that will be created
+
+        UTILIZATION :
     """
     predictions = rf.predict(X)
 
     X["predictions"] = predictions
 
-    with open('data/rf3.txt', 'w') as f:
+    with open('data/' + filename, 'w') as f:
         f.write('TweetID,retweets_count\n')
         for index, row in X.iterrows():
             f.write('{},{}\n'.format(row["TweetID"], int(row["predictions"]) ))
