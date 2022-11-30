@@ -37,6 +37,7 @@ if __name__ == "__main__":
         print("n_estimators :", n_estimator)
         sum = 0
         for i in range(1,4):
+            print("   {}".format(i))
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=21*i)
             rf = RandomForestRegressor(n_estimators = n_estimator, random_state = 21*i)
 

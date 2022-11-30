@@ -73,8 +73,8 @@ def random_search(n_iter = 100, cv = 3, filename = "evaluation_numberized", data
 
     rs = RandomizedSearchCV(estimator = rf,
                 param_distributions = param_grid,
-                n_iter = 100, #Number of combinations tested
-                cv = 3, #number of folds to use for cross validation (more cv folds reduces the chances of overfitting)
+                n_iter = n_iter, #Number of combinations tested
+                cv = cv, #number of folds to use for cross validation (more cv folds reduces the chances of overfitting)
                 verbose = 2, #Quantity of msg print
                 random_state = 42, #Pseudo random number generator state used for random uniform sampling
                 n_jobs = -1) #Number of jobs to run in parallel. None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.
