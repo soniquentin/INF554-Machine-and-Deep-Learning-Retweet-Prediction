@@ -30,7 +30,7 @@ def evaluation(rf, X_test, y_test):
     for i in range(len(pred)):
         pred[i] = round(pred[i])
     print("Mean square error : {}".format( mean_squared_error(y_test, pred)) )
-
+    return mean_squared_error(y_test, pred)
 
 
 def plot(X) :
