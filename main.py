@@ -8,10 +8,14 @@ from os.path import exists
 import os
 import pickle
 
+#### PARAMETERS ####
+compared_model = "third_submission"
+
+####################
 
 def simple_train_example() :
 
-    data_numberized = import_data(debug = True)
+    data_numberized = import_features_data(debug = True)
     X = data_numberized.drop(['retweets_count'], axis = 1, inplace = False )
     y = data_numberized["retweets_count"]
 
@@ -19,6 +23,28 @@ def simple_train_example() :
     rf = RandomForestRegressor(n_estimators = 100)
     rf.fit(X_train, y_train)
     evaluation(rf, X_test, y_test)
+
+
+
+def process_model(model_name = "rf2", compared_model = compared_model, debug = True) :
+    """
+        Process an existing model for sumbission :
+            - Import the existing model
+            - Create the csv file
+            - Calculate the distance with the previous submission (Mean square error)
+
+        INPUT :
+            model_name : the pickle file name of the existing model
+            compared_model : name of CSV file of a previous submission to which we will compare the new model
+            debug : to print
+
+        UTILIZATION :
+            process_model(model_name = "rf2")
+    """
+
+    X = import_features_data(data = "data/evaluation.csv", debug = debug)
+    rf = import_model(model_name = model_name, debug = debug)
+    write_and_compare_prediction(rf, X, model_name, compared_model, 10, debug)
 
 
 def search_minimum_hp(hp, range_hp, plot = True, cv = 3, nb_treads = 5, debug = True):
@@ -54,11 +80,12 @@ def search_minimum_hp(hp, range_hp, plot = True, cv = 3, nb_treads = 5, debug = 
 
     if plot :
         plt.plot(range_hp, score_mean_list)
+        plt.savefig('output/search_{}.png'.format(hp), dpi = 300)
         plt.show()
 
 
 
-def random_search(n_iter = 100, cv = 3, save_model = True, model_name = "rf", debug = True) :
+def random_search(n_iter = 100, cv = 3, save_model = True, model_name = "rf2", debug = True) :
     """
         Process a random search process and return (+ save) the model
 
@@ -66,6 +93,8 @@ def random_search(n_iter = 100, cv = 3, save_model = True, model_name = "rf", de
             n_iter : Number of combinations tested
             cv :  number of folds to use for cross validation (more cv folds reduces the chances of overfitting)
             save_model : True if the final estimator is saved (.pickle)
+            model_name : model name (.pickle)
+            debug : True if want to print for debug
 
         OUTPUT :
             Best estimator rf
@@ -87,7 +116,8 @@ def random_search(n_iter = 100, cv = 3, save_model = True, model_name = "rf", de
     'min_samples_split' : [2, 5, 10], # the minimum number of samples required to split an internal node
     'min_samples_leaf' : [1, 2, 4], # the minimum number of samples required to be at a leaf node
     'bootstrap' : [True, False], # Whether bootstrap samples are used when building trees
-    'random_state' : [42]
+    'random_state' : [42],
+    'criterion' : ["absolute_error"]
     }
 
 
@@ -99,7 +129,8 @@ def random_search(n_iter = 100, cv = 3, save_model = True, model_name = "rf", de
                 cv = cv, #number of folds to use for cross validation (more cv folds reduces the chances of overfitting)
                 verbose = 2, #Quantity of msg print
                 random_state = 42, #Pseudo random number generator state used for random uniform sampling
-                n_jobs = -1) #Number of jobs to run in parallel. None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.
+                n_jobs = -1, #Number of jobs to run in parallel. None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.
+                scoring = 'neg_mean_absolute_error')
 
     if debug :
         print("\n==== RANDOM SEARCH ====")
@@ -116,40 +147,17 @@ def random_search(n_iter = 100, cv = 3, save_model = True, model_name = "rf", de
         if debug :
             print("\n==== SAVE MODEL ====")
             print("    --> best parameters :", rs.best_params_)
-        with open(os.path.dirname(__file__) + "/output/" + model_name, 'wb') as f :
+        with open(os.path.dirname(__file__) + "/models/" + model_name, 'wb') as f :
             pickle.dump(rs.best_estimator_, f)
 
 
     return rs.best_estimator_ #Return the best estimator rf_best
 
 
-def write_prediction(rf, X, filename = "rf_pred.txt") :
-    """
-        Create the file for submission
-
-        INPUT :
-            rf : estimator
-            X : Features of retweet to predict
-            file : the text file name that will be created
-
-        UTILIZATION :
-    """
-    predictions = rf.predict(X)
-
-    X["predictions"] = predictions
-
-    with open('data/' + filename, 'w') as f:
-        f.write('TweetID,retweets_count\n')
-        for index, row in X.iterrows():
-            f.write('{},{}\n'.format(row["TweetID"], int(row["predictions"]) ))
-
-
 
 if __name__ == "__main__":
 
-    #search_minimum_hp(hp = 'n_estimators', range_hp = [100*i for i in range(1,21)], plot = True, cv = 3, nb_treads = 5, debug = True)
-
-    random_search(n_iter = 75)
+    #random_search(n_iter = 75, model_name = "rf3")
 
     #search_minimum_hp(hp = 'n_estimators', range_hp = [100*i for i in range(1,21)], plot = True, cv = 3, nb_treads = 5, debug = True)
-    #simple_train_example()
+    process_model(model_name = "rf")

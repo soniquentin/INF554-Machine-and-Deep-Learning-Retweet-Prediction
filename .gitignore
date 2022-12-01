@@ -1,3 +1,7 @@
-output/*
-!output/.gitkeep
+models/*
+!models/.gitkeep
+
+submissions/*
+!submissions/.gitkeep
+
 test.py
