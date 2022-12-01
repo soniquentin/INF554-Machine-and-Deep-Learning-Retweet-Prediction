@@ -9,9 +9,14 @@ import os
 import pickle
 
 
-def simple_train_example(X,y) :
+def simple_train_example() :
+
+    data_numberized = import_data(debug = True)
+    X = data_numberized.drop(['retweets_count'], axis = 1, inplace = False )
+    y = data_numberized["retweets_count"]
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
-    rf = RandomForestRegressor(n_estimators = 100, random_state = 42)
+    rf = RandomForestRegressor(n_estimators = 100)
     rf.fit(X_train, y_train)
     evaluation(rf, X_test, y_test)
 
@@ -81,7 +86,8 @@ def random_search(n_iter = 100, cv = 3, save_model = True, model_name = "rf", de
     'max_depth' : [10*i for i in range(1,11)], # maximum number of levels in tree
     'min_samples_split' : [2, 5, 10], # the minimum number of samples required to split an internal node
     'min_samples_leaf' : [1, 2, 4], # the minimum number of samples required to be at a leaf node
-    'bootstrap' : [True, False] # Whether bootstrap samples are used when building trees
+    'bootstrap' : [True, False], # Whether bootstrap samples are used when building trees
+    'random_state' : [42]
     }
 
 
@@ -140,6 +146,10 @@ def write_prediction(rf, X, filename = "rf_pred.txt") :
 
 
 if __name__ == "__main__":
-    random_search(n_iter = 50)
 
     #search_minimum_hp(hp = 'n_estimators', range_hp = [100*i for i in range(1,21)], plot = True, cv = 3, nb_treads = 5, debug = True)
+
+    random_search(n_iter = 75)
+
+    #search_minimum_hp(hp = 'n_estimators', range_hp = [100*i for i in range(1,21)], plot = True, cv = 3, nb_treads = 5, debug = True)
+    #simple_train_example()
