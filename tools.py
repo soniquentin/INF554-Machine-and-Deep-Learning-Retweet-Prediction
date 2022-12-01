@@ -3,27 +3,16 @@ from textblob_fr import PatternTagger, PatternAnalyzer
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
 import numpy as np
+from sklearn.ensemble import RandomForestRegressor
+import time
+from features_extraction import *
 
 from os.path import exists
 import os
 import pickle
 import csv
-
-
-def numberize_features(X):
-    """
-        X_train = numberize_features(X_train)
-        X_test = numberize_features(X_test)
-    """
-    def str_to_len(x):
-        if type(x)==str:
-            return len(x.split("'")) -1
-        else:
-            return x
-
-    return X.applymap(str_to_len)
 
 
 def import_model(model_name = "rf", debug = True) :
@@ -57,6 +46,9 @@ def import_model(model_name = "rf", debug = True) :
         if debug :
             print("    --> Model not found ! ")
 
+    if debug and rf != None :
+        print("    --> Model parameters : {}".format( rf.get_params() ) )
+
     return rf
 
 
@@ -65,7 +57,7 @@ def import_features_data(data = "data/train.csv", debug = True) :
         Import data and calculate features
 
         INPUT :
-            data : file name of the raw data (.csv)
+            data : path to csv of the raw data
             debug : True if want to print for debug
 
         EXAMPLE UTILIZATION :
@@ -84,12 +76,45 @@ def import_features_data(data = "data/train.csv", debug = True) :
     if debug :
         print("\n==== CALCULATING FEATURES ====")
 
-    if debug :
-        print("    --> Numberizing ")
-    df_data = numberize_features(df_data)
-
+    df_data = numberize_features(df_data, debug = debug) #Numberizing
+    df_data = followers_over_friends(df_data ,debug = debug) #followers_count/friends_count
 
     return df_data
+
+
+
+def train_model(data = "data/train.csv", save_model = True, model_name = "rf2", debug = True  , **kwargs) : #kwargs is a dictionnary
+
+    df_data = import_features_data(data = data, debug = debug)
+
+    try :
+        X = df_data.drop(['retweets_count'], axis = 1, inplace = False )
+        y = df_data["retweets_count"]
+    except Exception as e :
+        raise Exception("Are you sure that file {} contains the column 'retweets_count' ?".format(data))
+
+    ### Overwrite Warning msg
+    file_exists = exists(os.path.dirname(__file__) + "/models/" + model_name)
+    if file_exists :
+        print("WARNING : model {} already exists. Interrupt now, otherwise, it will be overwritten".format(model_name))
+
+
+    ### TRAINING ###
+    if debug :
+        print("\n==== TRAINING... ====")
+        t_i = time.time()
+
+    rf = RandomForestRegressor(**kwargs)
+    rf.fit(X, y)
+    if debug :
+        print("    --> training duration : {}".format(time.time() - t_i))
+
+    ### SAVING MODEL ###
+    if save_model :
+        if debug :
+            print("\n==== SAVING MODEL... ====")
+        with open(os.path.dirname(__file__) + "/models/" + model_name, 'wb') as f :
+            pickle.dump(rf, f)
 
 
 def write_and_compare_prediction(rf, X, filename, compared_model, disagree_window = 0, debug = True) :
@@ -108,7 +133,7 @@ def write_and_compare_prediction(rf, X, filename, compared_model, disagree_windo
             write_and_compare_prediction(rf, X, model_name, compared_model, debug)
     """
     if debug :
-        print("\n==== WRITING CSV FOR SUBMISSION (File Name : {}) ====".format(filename))
+        print("\n==== WRITING CSV FOR SUBMISSION {} ====".format(filename))
 
     predictions = rf.predict(X).astype(int) ###TAKE THE PARTIE ENTIERE
     X["predictions"] = predictions
@@ -122,7 +147,7 @@ def write_and_compare_prediction(rf, X, filename, compared_model, disagree_windo
 
 
     if debug :
-        print("\n==== COMPARING WITH PREVIOUS SUBMISSION (File Name : {}) ====".format(compared_model))
+        print("\n==== COMPARING WITH PREVIOUS SUBMISSION {} ====".format(compared_model))
 
     previous_prediction = np.copy(predictions)
 
@@ -135,9 +160,9 @@ def write_and_compare_prediction(rf, X, filename, compared_model, disagree_windo
             previous_prediction[index] = int(row[1])
             index += 1
 
-    print("    --> Mean square distance with a previous submission ({} VS {}) : {}".format(filename,
+    print("    --> Mean absolute distance with a previous submission ({} VS {}) : {}".format(filename,
                                                                                             compared_model,
-                                                                                            mean_squared_error(predictions, previous_prediction)))
+                                                                                            mean_absolute_error(predictions, previous_prediction)))
 
     if disagree_window != 0 :
         diff = np.absolute(predictions - previous_prediction)
@@ -159,20 +184,24 @@ def evaluation(rf, X_test, y_test):
     pred = rf.predict(X_test)
     for i in range(len(pred)):
         pred[i] = int(pred[i])
-    print("Mean square error : {}".format( mean_squared_error(y_test, pred)) )
-    return mean_squared_error(y_test, pred)
+    print("Mean absolute error : {}".format( mean_absolute_error(y_test, pred)) )
+    return mean_absolute_error(y_test, pred)
 
 
 
-def plot(X) :
+def plot(X, debug = True) :
     """
         plot(X_train)
     """
-    X.drop(columns = ["text", "urls", "mentions", "hashtags", "TweetID"], inplace = True)
+    if debug :
+        print("\n==== PLOTING (PAIRPLOT) ====")
+
+    #X.drop(columns = ["text", "urls", "mentions", "hashtags", "TweetID"], inplace = True)
+    X = X[['retweets_count', 'fof']]
 
     #sns.distplot(X_train['retweets_count'])
     sns.pairplot(X.head(10000))
-    plt.savefig('plot_result.png', dpi = 300)
+    plt.savefig('output/plot_result.png', dpi = 300)
 
 
 def sentiment_processing(X, columns_text_name) :

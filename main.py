@@ -8,10 +8,6 @@ from os.path import exists
 import os
 import pickle
 
-#### PARAMETERS ####
-compared_model = "third_submission"
-
-####################
 
 def simple_train_example() :
 
@@ -26,16 +22,17 @@ def simple_train_example() :
 
 
 
-def process_model(model_name = "rf2", compared_model = compared_model, debug = True) :
+def process_model(model_name = "rf2", compared_model = "", disagree_window = 10, debug = True) :
     """
         Process an existing model for sumbission :
             - Import the existing model
             - Create the csv file
-            - Calculate the distance with the previous submission (Mean square error)
+            - Calculate the distance with the previous submission (Mean absolute error)
 
         INPUT :
             model_name : the pickle file name of the existing model
             compared_model : name of CSV file of a previous submission to which we will compare the new model
+            disagree_window : show the disagree_window biggest absolute differences of prediction with the previous submissions
             debug : to print
 
         UTILIZATION :
@@ -44,45 +41,7 @@ def process_model(model_name = "rf2", compared_model = compared_model, debug = T
 
     X = import_features_data(data = "data/evaluation.csv", debug = debug)
     rf = import_model(model_name = model_name, debug = debug)
-    write_and_compare_prediction(rf, X, model_name, compared_model, 10, debug)
-
-
-def search_minimum_hp(hp, range_hp, plot = True, cv = 3, nb_treads = 5, debug = True):
-    from threading import Thread, Lock
-
-    n_iter = len(range_hp)
-    score_mean_list = [0]*n_iter
-
-    data_numberized = import_data(debug = debug)
-
-    X = data_numberized.drop(['retweets_count'], axis = 1, inplace = False )
-    y = data_numberized["retweets_count"]
-
-
-    def thread_run(lock, index_threads, nb_treads) :
-        for i in range(n_iter) :
-            if i%nb_treads == index_threads :
-                if debug :
-                    print("    --> [Thread {}] Computing {}".format(index_threads,i))
-                rf = RandomForestRegressor(**{hp : range_hp[i], "max_depth" : 100})
-                scores = cross_val_score(rf, X, y, cv = cv, scoring = 'neg_mean_absolute_error')
-                with lock :
-                    score_mean_list[i] = scores.mean()
-
-    lock = Lock()
-    threads = [Thread(target=thread_run, args=(lock, i,nb_treads,)) for i in range(nb_treads)]
-
-    for thread in threads :
-        thread.start()
-
-    for thread in threads :
-        thread.join()
-
-    if plot :
-        plt.plot(range_hp, score_mean_list)
-        plt.savefig('output/search_{}.png'.format(hp), dpi = 300)
-        plt.show()
-
+    write_and_compare_prediction(rf, X, model_name, compared_model, disagree_window, debug)
 
 
 def random_search(n_iter = 100, cv = 3, save_model = True, model_name = "rf2", debug = True) :
@@ -116,8 +75,7 @@ def random_search(n_iter = 100, cv = 3, save_model = True, model_name = "rf2", d
     'min_samples_split' : [2, 5, 10], # the minimum number of samples required to split an internal node
     'min_samples_leaf' : [1, 2, 4], # the minimum number of samples required to be at a leaf node
     'bootstrap' : [True, False], # Whether bootstrap samples are used when building trees
-    'random_state' : [42],
-    'criterion' : ["absolute_error"]
+    'random_state' : [42]
     }
 
 
@@ -145,7 +103,7 @@ def random_search(n_iter = 100, cv = 3, save_model = True, model_name = "rf2", d
 
     if save_model :
         if debug :
-            print("\n==== SAVE MODEL ====")
+            print("\n==== SAVING MODEL ====")
             print("    --> best parameters :", rs.best_params_)
         with open(os.path.dirname(__file__) + "/models/" + model_name, 'wb') as f :
             pickle.dump(rs.best_estimator_, f)
@@ -156,8 +114,28 @@ def random_search(n_iter = 100, cv = 3, save_model = True, model_name = "rf2", d
 
 
 if __name__ == "__main__":
+    ##==========================================##
+    """
+    model_name = "rf3"
+    train_model(model_name = model_name ,
+                bootstrap = True,
+                max_depth = 90,
+                max_features = 1.0,
+                min_samples_leaf = 2,
+                min_samples_split = 2,
+                n_estimators = 300,
+                random_state = 42)
+
+    process_model(model_name = model_name, compared_model = "third_submission", disagree_window = 15)
+    """
+    ##==========================================##
+    X = import_features_data().head(10000)
+    print(X["retweets_count"])
+    """
+    sns.histplot(data=X["retweets_count"], x=X["fof"])
+    plt.savefig('hist_retweet_count_fof.png', dpi = 300)
+    """
 
     #random_search(n_iter = 75, model_name = "rf3")
 
     #search_minimum_hp(hp = 'n_estimators', range_hp = [100*i for i in range(1,21)], plot = True, cv = 3, nb_treads = 5, debug = True)
-    process_model(model_name = "rf")
