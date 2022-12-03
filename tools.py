@@ -5,8 +5,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_error
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor,GradientBoostingRegressor
 import time
+import xgboost as xgb
+
 from features_extraction import *
 
 from os.path import exists
@@ -52,7 +54,7 @@ def import_model(model_name = "rf", debug = True) :
     return rf
 
 
-def import_features_data(data = "data/train.csv", debug = True) :
+def import_features_data(data = "data/train.csv", list_features_to_drop = ['text', 'mentions', 'urls', 'hashtags'], debug = True) :
     """
         Import data and calculate features
 
@@ -72,18 +74,43 @@ def import_features_data(data = "data/train.csv", debug = True) :
     df_data = pd.read_csv(data)
 
 
-    #========= CALCULATE FEATURES ===========
+    #========= EXTRACTING FEATURES ===========
     if debug :
-        print("\n==== CALCULATING FEATURES ====")
+        print("\n==== EXTRACTING FEATURES ====")
 
-    df_data = numberize_features(df_data, debug = debug) #Numberizing
-    df_data = followers_over_friends(df_data ,debug = debug) #followers_count/friends_count
+    new_feature_calculated = [False] ##Variable that is True if at least one feature have to calculated
+    
+    df_data = nb_urls_hashtags(df_data, new_feature_calculated, debug) #Number urls and number hashtags
+    df_data = emotion_and_sentiments(df_data, new_feature_calculated, debug) #Add sentiment features
+    df_data = followers_over_friends(df_data,new_feature_calculated, debug) #followers_count/friends_count
+
+    if new_feature_calculated : #A new feature was calculated, we have to update the features in the file
+        if debug :
+            print("    --> Updating {} with new features".format(data))
+        df_data.to_csv(data, sep=',', encoding='utf-8', index = False) #Saving calculated features to avoid recalculate them again
+
+    #========= SELECTING FEATURES ===========
+    if debug :
+        print("\n==== SELECTING FEATURES ====")
+        print("    --> Features dropped :", list_features_to_drop)
+
+    df_data.drop(list_features_to_drop, axis = 1, inplace = True )
 
     return df_data
 
 
 
-def train_model(data = "data/train.csv", save_model = True, model_name = "rf2", debug = True  , **kwargs) : #kwargs is a dictionnary
+def train_model(alg = "RF", data = "data/train.csv", save_model = True, model_name = "rf2", debug = True  , **kwargs) : #kwargs is a dictionnary
+    """
+        Import train data, train an estimator with **kwargs as arguments and save it
+
+        INPUT :
+            alg : the choosen algorithm ("RF" : Random Forst // "GB" : Gradient Boosting // "XGB" : XGBoost)
+            data : the path with train data
+            save_model : True if you want to save the model
+            model_name : model name file (.pickle) that will be saved
+            debug : to print
+    """
 
     df_data = import_features_data(data = data, debug = debug)
 
@@ -104,7 +131,14 @@ def train_model(data = "data/train.csv", save_model = True, model_name = "rf2", 
         print("\n==== TRAINING... ====")
         t_i = time.time()
 
-    rf = RandomForestRegressor(**kwargs)
+    if alg == "RF" :
+        rf = RandomForestRegressor(**kwargs)
+    elif alg == "GB" :
+        rf = GradientBoostingRegressor(**kwargs)
+    else :
+        rf = xgb.XGBRegressor(**kwargs)
+
+
     rf.fit(X, y)
     if debug :
         print("    --> training duration : {}".format(time.time() - t_i))
