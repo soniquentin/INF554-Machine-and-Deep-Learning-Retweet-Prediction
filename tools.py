@@ -79,7 +79,7 @@ def import_features_data(data = "data/train.csv", list_features_to_drop = ['text
         print("\n==== EXTRACTING FEATURES ====")
 
     new_feature_calculated = [False] ##Variable that is True if at least one feature have to calculated
-    
+
     df_data = nb_urls_hashtags(df_data, new_feature_calculated, debug) #Number urls and number hashtags
     df_data = emotion_and_sentiments(df_data, new_feature_calculated, debug) #Add sentiment features
     df_data = followers_over_friends(df_data,new_feature_calculated, debug) #followers_count/friends_count
@@ -149,6 +149,72 @@ def train_model(alg = "RF", data = "data/train.csv", save_model = True, model_na
             print("\n==== SAVING MODEL... ====")
         with open(os.path.dirname(__file__) + "/models/" + model_name, 'wb') as f :
             pickle.dump(rf, f)
+
+
+
+def semi_supervised(alg = "RF", previous_model_name = "rf2", save_model = True, data_train = "data/train.csv", data_test = "data/evaluation.csv", debug = True, **kwargs):
+    """
+        Once a first training was done, process to a semi_supervised approach :
+            - Labelling the evaluation set with a previous_model to obtain a bigger training
+            - train an new estimator with **kwargs as arguments and save it
+        The new estimator will have the same name as the previous one with "_semisupervised" appended
+
+        INPUT :
+            - alg : the choosen algorithm for the new estimator ("RF" : Random Forst // "GB" : Gradient Boosting // "XGB" : XGBoost)
+            - previous_model_name : name of the previous model (that is used for labelling evaluation)
+            - save_model : True if you want to save the new model
+            - data_train : path to csv of the training data
+            - data_train : path to csv of the evaluation data
+            - debug : to print
+    """
+
+    rf = import_model(model_name = previous_model_name)
+
+    ### Overwrite Warning msg
+    file_exists = exists(os.path.dirname(__file__) + "/models/" + previous_model_name + "_semisupervised")
+    if file_exists :
+        print("WARNING : model {} already exists. Interrupt now, otherwise, it will be overwritten".format(previous_model_name + "_semisupervised"))
+
+
+    ### TRAINING ###
+    if debug :
+        print("\n==== TRAINING SEMI-SURPERVISED ====")
+        t_i = time.time()
+        print("    --> Expanding the training dataset ... (labelling evaluation data)")
+
+    #Import train and evaluation abd label evaluation
+    df_data_train = import_features_data(data = data_train, list_features_to_drop = ['text', 'mentions', 'urls', 'hashtags'], debug = True)
+
+    df_data_test = import_features_data(data = data_test, list_features_to_drop = ['text', 'mentions', 'urls', 'hashtags'], debug = True)
+    df_data_test["retweets_count"] = rf.predict(df_data_test).astype(int)
+
+    #Create new dataset by concatinating train et evaluation set
+    df_data = pd.concat([df_data_train, df_data_train])
+    X = df_data.drop(['retweets_count'], axis = 1, inplace = False )
+    y = df_data["retweets_count"]
+
+    if alg == "RF" :
+        rf = RandomForestRegressor(**kwargs)
+    elif alg == "GB" :
+        rf = GradientBoostingRegressor(**kwargs)
+    else :
+        rf = xgb.XGBRegressor(**kwargs)
+
+    if debug :
+        print("    --> Fitting...")
+
+    rf.fit(X, y)
+    if debug :
+        print("    --> training duration : {}".format(time.time() - t_i))
+
+    ### SAVING MODEL ###
+    if save_model :
+        if debug :
+            print("\n==== SAVING MODEL... ====")
+        with open(os.path.dirname(__file__) + "/models/" + previous_model_name  + "_semisupervised", 'wb') as f :
+            pickle.dump(rf, f)
+
+
 
 
 def write_and_compare_prediction(rf, X, filename, compared_model, disagree_window = 0, debug = True) :

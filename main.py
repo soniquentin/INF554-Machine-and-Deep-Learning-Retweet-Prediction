@@ -126,11 +126,14 @@ def random_search(alg = "RF", n_iter = 100, cv = 3, save_model = True, model_nam
 
 
 
+
+
+
 if __name__ == "__main__":
     ##==========================================##
 
     model_name = "rf5"
-
+    """
     train_model(alg = "RF",
                 model_name = model_name ,
                 #loss = "absolute_error",  #GB
@@ -145,9 +148,28 @@ if __name__ == "__main__":
                 random_state = 42)
 
     process_model(model_name = model_name, compared_model = "third_submission", disagree_window = 15)
-
+    """
     ##==========================================##
     """
     random_search(n_iter = 75, model_name = "xgb")
     """
     #search_minimum_hp(hp = 'n_estimators', range_hp = [100*i for i in range(1,21)], plot = True, cv = 3, nb_treads = 5, debug = True)
+
+
+    ###========== SEMI-SURPERVISED ===========
+    """
+    semi_supervised(alg = "RF",
+                    previous_model_name = model_name,
+                    #loss = "absolute_error",  #GB
+                    bootstrap = True,  #RF
+                    max_depth = 90,
+                    max_features = 1.0,
+                    min_samples_leaf = 2,
+                    min_samples_split = 2,
+                    n_estimators = 300,
+                    #objective = "reg:absoluteerror", #XGB
+                    #eval_metric = "mae" #XGB
+                    random_state = 42)
+    """
+
+    process_model(model_name =  "rf3", compared_model = "third_submission", disagree_window = 15)
