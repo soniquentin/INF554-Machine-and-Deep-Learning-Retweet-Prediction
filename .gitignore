@@ -1,5 +1,6 @@
 models/*
 !models/.gitkeep
+!models/__init__.py
 
 submissions/*
 !submissions/.gitkeep

@@ -9,18 +9,8 @@ from os.path import exists
 import os
 import pickle
 
-
-def simple_train_example() :
-
-    data_numberized = import_features_data(debug = True)
-    X = data_numberized.drop(['retweets_count'], axis = 1, inplace = False )
-    y = data_numberized["retweets_count"]
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
-    rf = RandomForestRegressor(n_estimators = 100)
-    rf.fit(X_train, y_train)
-    evaluation(rf, X_test, y_test)
-
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning) #To ignore furturewarning
 
 
 def process_model(model_name = "rf2", compared_model = "", disagree_window = 10, debug = True) :
@@ -39,10 +29,17 @@ def process_model(model_name = "rf2", compared_model = "", disagree_window = 10,
         UTILIZATION :
             process_model(model_name = "rf2")
     """
+    #Import the existing model and all the training objects
+    rf, training_objs = import_model(model_name = model_name, debug = debug)
 
-    X = import_features_data(data = "data/evaluation.csv", debug = debug)
-    rf = import_model(model_name = model_name, debug = debug)
-    write_and_compare_prediction(rf, X, model_name, compared_model, disagree_window, debug)
+    #Import evaluation data and calculate the features
+    X, embed, y, tweed_id = import_features_data(data = "data/evaluation.csv",
+                                                        model_name = model_name,
+                                                        training_objs = training_objs,
+                                                        debug = debug) #y = None and training_objs = None
+
+    #Make the prediction and write the submission file (+ compare it to a previous submission)
+    write_and_compare_prediction(rf, X, embed, tweed_id, model_name, compared_model, disagree_window, debug)
 
 
 def random_search(alg = "RF", n_iter = 100, cv = 3, save_model = True, model_name = "rf2", debug = True) :
@@ -63,10 +60,7 @@ def random_search(alg = "RF", n_iter = 100, cv = 3, save_model = True, model_nam
             rf = random_search()
     """
 
-    df_data = import_features_data(debug = debug)
-
-    X = df_data.drop(['retweets_count'], axis = 1, inplace = False )
-    y = df_data["retweets_count"]
+    X,y,scaler,tweet_id = import_features_data(debug = debug)
 
 
     #Param grid
@@ -132,44 +126,35 @@ def random_search(alg = "RF", n_iter = 100, cv = 3, save_model = True, model_nam
 if __name__ == "__main__":
     ##==========================================##
 
-    model_name = "rf5"
+    model_name = "Second_NN"
+
     """
-    train_model(alg = "RF",
+    #### ========  RF  ========
+    scaler = train_model(alg = "RF",
+                        model_name = model_name ,
+                        #loss = "absolute_error",  #GB
+                        bootstrap = True,  #RF
+                        max_depth = 90,
+                        max_features = 1.0,
+                        min_samples_leaf = 2,
+                        min_samples_split = 2,
+                        n_estimators = 300,
+                        #objective = "reg:absoluteerror", #XGB
+                        #eval_metric = "mae" #XGB
+                        random_state = 42)
+    """
+
+    #### ========  NNnetwork  ========
+
+    train_model(alg = "NN",
                 model_name = model_name ,
-                #loss = "absolute_error",  #GB
-                bootstrap = True,  #RF
-                max_depth = 90,
-                max_features = 1.0,
-                min_samples_leaf = 2,
-                min_samples_split = 2,
-                n_estimators = 300,
-                #objective = "reg:absoluteerror", #XGB
-                #eval_metric = "mae" #XGB
-                random_state = 42)
+                epochs=100,
+                batch_size=32,
+                validation_split = 0.2)
 
     process_model(model_name = model_name, compared_model = "third_submission", disagree_window = 15)
-    """
+
     ##==========================================##
     """
     random_search(n_iter = 75, model_name = "xgb")
     """
-    #search_minimum_hp(hp = 'n_estimators', range_hp = [100*i for i in range(1,21)], plot = True, cv = 3, nb_treads = 5, debug = True)
-
-
-    ###========== SEMI-SURPERVISED ===========
-    """
-    semi_supervised(alg = "RF",
-                    previous_model_name = model_name,
-                    #loss = "absolute_error",  #GB
-                    bootstrap = True,  #RF
-                    max_depth = 90,
-                    max_features = 1.0,
-                    min_samples_leaf = 2,
-                    min_samples_split = 2,
-                    n_estimators = 300,
-                    #objective = "reg:absoluteerror", #XGB
-                    #eval_metric = "mae" #XGB
-                    random_state = 42)
-    """
-
-    process_model(model_name =  "rf3", compared_model = "third_submission", disagree_window = 15)
