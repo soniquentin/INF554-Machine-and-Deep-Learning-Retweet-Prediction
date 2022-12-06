@@ -1,6 +1,7 @@
 models/*
 !models/.gitkeep
 !models/__init__.py
+!models/word2vec_rf7.model
 
 submissions/*
 !submissions/.gitkeep

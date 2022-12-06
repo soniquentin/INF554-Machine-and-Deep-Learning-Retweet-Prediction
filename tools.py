@@ -137,8 +137,8 @@ def import_model(model_name = "rf", debug = True) :
 
 
 def import_features_data(data = "data/train.csv",
-                        feat_drop = ['text', 'mentions', 'urls', 'hashtags', 'TweetID'] + ["fof", "ftf1", "ftf2", "favorites_count", "followers_count", "statuses_count", "friends_count", "timestamp"],
-                        feat_scale = ["fof", "favorites_count", "followers_count", "statuses_count", "friends_count", "timestamp"],
+                        feat_drop = ['text', 'mentions', 'urls', 'hashtags', 'TweetID'], #+ ["fof", "ftf1", "ftf2", "favorites_count", "followers_count", "statuses_count", "friends_count"],
+                        feat_scale = [], #["fof", "favorites_count", "followers_count", "statuses_count", "friends_count", "timestamp"],
                         feat_log = [],#["fof", "ftf1", "ftf2", "favorites_count", "followers_count", "statuses_count", "friends_count"],
                         n_dim = 10,
                         saved = False,
@@ -165,16 +165,21 @@ def import_features_data(data = "data/train.csv",
             y = df_data["retweets_count"]
     """
     if training_objs != None : #Testing phase ==> reintegrate training objects
-        scaler = training_objs["scaler"]
-        word2vec_model = training_objs["word2vec"]
-        tfidf = training_objs["tfidf"]
-        vocab_hashtag = training_objs["vocab_hashtag"]
+        if "scaler" in training_objs :
+            scaler = training_objs["scaler"]
+        if "word2vec" in training_objs :
+            word2vec_model = training_objs["word2vec"]
+        if "tfidf" in training_objs :
+            tfidf = training_objs["tfidf"]
+        if "vocab_hashtag" in training_objs :
+            vocab_hashtag = training_objs["vocab_hashtag"]
     else :  #Training phase ==> we have to build training objects
         scaler = None
         word2vec_model = None
         tfidf = None
         vocab_hashtag = None
 
+    embed = None
 
     #========= IMPORT DATA ===========
     if debug :
@@ -208,6 +213,7 @@ def import_features_data(data = "data/train.csv",
         df_data["{}_log".format(feature)] = df_data[feature].apply(log_transform)
 
     #scaling
+    """
     emb_text_feat = ["text_emb_{}".format(i) for i in range(n_dim)]
     scaled_sub_df = df_data[feat_scale + emb_text_feat] #We add text_emb_i features to be scaled
     df_data.drop(emb_text_feat, axis = 1, inplace = True) #We drop text_emb_i on the df_data
@@ -224,7 +230,7 @@ def import_features_data(data = "data/train.csv",
             pickle.dump(scaler, f)
 
     df_data = pd.concat([df_data, scaled_sub_df], axis = 1) #Remerge the two
-
+    """
 
 
 
@@ -242,13 +248,16 @@ def import_features_data(data = "data/train.csv",
 
 
     if training_objs == None : #Training phase
-        y = df_data["retweets_count"].apply(log_transform) #we log transform the target as well
+        #y = df_data["retweets_count"].apply(log_transform) #we log transform the target as well
+        y = df_data["retweets_count"]
         df_data.drop(['retweets_count'], axis = 1, inplace = True )
     else : #Testing phase
         y = None
 
+
     #pd.set_option('display.max_columns', 500)
     #print(df_data.head(10))
+    #print(y.head(10))
     return df_data, embed, y, tweed_id
 
 
@@ -385,9 +394,6 @@ def write_and_compare_prediction(rf, X, embed, tweed_id, filename, compared_mode
 
     if disagree_window != 0 :
         diff = np.absolute(predictions - previous_prediction)
-        print(diff)
-        print(len(diff))
-        print(str(type(diff)))
         ind = np.argpartition(diff, -disagree_window)[-disagree_window:] #Index of the disagree_window largest absolute differences
         print("    --> {} largest absolute differences".format(disagree_window) )
         for i in ind :

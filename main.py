@@ -60,7 +60,7 @@ def random_search(alg = "RF", n_iter = 100, cv = 3, save_model = True, model_nam
             rf = random_search()
     """
 
-    X,y,scaler,tweet_id = import_features_data(debug = debug)
+    X,embed,y,tweet_id = import_features_data(debug = debug)
 
 
     #Param grid
@@ -72,7 +72,7 @@ def random_search(alg = "RF", n_iter = 100, cv = 3, save_model = True, model_nam
         'min_samples_split' : [2, 5, 10], # the minimum number of samples required to split an internal node
         'min_samples_leaf' : [1, 2, 4], # the minimum number of samples required to be at a leaf node
         'bootstrap' : [True, False], # Whether bootstrap samples are used when building trees
-        'random_state' : [42]
+        'random_state' : [41]
         }
         rf = RandomForestRegressor()
     elif alg == "GB" :
@@ -121,12 +121,10 @@ def random_search(alg = "RF", n_iter = 100, cv = 3, save_model = True, model_nam
 
 
 
-
-
 if __name__ == "__main__":
     ##==========================================##
 
-    model_name = "Second_NN"
+    model_name = "rf8"
 
     """
     #### ========  RF  ========
@@ -145,7 +143,7 @@ if __name__ == "__main__":
     """
 
     #### ========  NNnetwork  ========
-
+    """
     train_model(alg = "NN",
                 model_name = model_name ,
                 epochs=100,
@@ -153,8 +151,8 @@ if __name__ == "__main__":
                 validation_split = 0.2)
 
     process_model(model_name = model_name, compared_model = "third_submission", disagree_window = 15)
+    process_model(model_name = model_name, compared_model = "top_score", disagree_window = 15)
+    """
 
     ##==========================================##
-    """
-    random_search(n_iter = 75, model_name = "xgb")
-    """
+    random_search(n_iter = 75, model_name = model_name)
