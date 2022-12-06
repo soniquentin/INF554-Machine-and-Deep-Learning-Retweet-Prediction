@@ -11,6 +11,116 @@ import numpy as np
 import os
 import pickle
 
+import networkx as nx
+import scipy.sparse as sp
+from random import randint
+
+def graph_hashtag_features(X):
+    
+    
+    def build_graph(X):
+        # build graph
+        for i in range (X['hashtags'].values.shape[0]):   
+            X['hashtags'].values[i] = X['hashtags'].values[i][2:-2].split("', '")
+    
+        list_hashtag = [item for sublist in X['hashtags'].values for item in sublist]
+    
+        idx = np.array(X['TweetID'].values, dtype=np.int32)
+        idx_map = {j: i for i, j in enumerate(idx)}
+               
+        L_edges = []         
+        for i in range( X.values.shape[0]):
+            X['hashtags'].iloc[i]
+            for hashtag in X['hashtags'].iloc[i]:
+                       
+                for j in range(i+1,X.values.shape[0]):
+                       
+                    if hashtag in X['hashtags'].iloc[j]:
+                       
+                       L_edges.append([idx[i],idx[j]])
+                        
+                    
+                           
+                       
+            
+                       
+        edges_unordered = np.array(L_edges)
+                    
+                       
+        edges = np.array(list(map(idx_map.get, edges_unordered.flatten())),
+                     dtype=np.int32).reshape(edges_unordered.shape)
+        adj = sp.coo_matrix((np.ones(edges.shape[0]), (edges[:, 0], edges[:, 1])),
+                        shape=(labels.shape[0], labels.shape[0]), dtype=np.float32)
+
+        # build symmetric adjacency matrix
+        adj = adj + adj.T.multiply(adj.T > adj) - adj.multiply(adj.T > adj)
+        
+        return adj
+    
+    def random_walk(G, node, walk_length):
+        # Simulates a random walk of length "walk_length" starting from node "node"
+
+        #Please insert your code for Task 1 here
+        walk = [node]
+        for i in range(walk_length):
+            neighbors =  list(G.neighbors(walk[i]))
+            walk.append(neighbors[randint(0,len(neighbors)-1)])
+
+        walk = [str(node) for node in walk]
+        return walk
+    def generate_walks(G, num_walks, walk_length):
+        # Runs "num_walks" random walks from each node
+
+        walks = []
+
+        #Please insert your code for Task 1 here
+        for i in range(num_walks):
+            for node in G.nodes():
+                walks.append(random_walk(G, node, walk_length))
+
+        permuted_walks = np.random.permutation(walks)
+        return permuted_walks.tolist()
+    
+    def deepwalk(G, num_walks, walk_length, n_dim):
+        # Simulates walks and uses the Skipgram model to learn node representations
+
+        print("Generating walks")
+        walks = generate_walks(G, num_walks, walk_length)
+
+        print("Training word2vec")
+    
+        #Please insert your code for Task 2 here
+        model = Word2Vec(vector_size=n_dim, window=8, min_count=0, sg=1, workers=8, hs=1)
+    
+    
+        model.build_vocab(walks)
+        model.train(walks, total_examples=model.corpus_count, epochs=5)
+
+        return model
+
+    adjency = build_graph(X)
+    G=nx.from_numpy_array(adjency)
+    n = G.number_of_nodes()
+    print('Graph builded !')
+    
+    n_dim = 128
+    n_walks = 10
+    walk_length = 20
+    model = deepwalk(G, n_walks, walk_length, n_dim) 
+    print('Model builded !')
+
+    DeepWalk_embeddings = np.empty(shape=(n, n_dim))
+    #Please insert your code for Task 2 here
+    for idx,node in enumerate(G.nodes()):
+        DeepWalk_embeddings[idx,:] = model.wv[str(node)]
+    for j in range(n_dim):
+        
+        X['graph_hashtag' + str(j)] = DeepWalk_embeddings[:,j]
+    print('finished !')
+
+    return X
+
+
 def nb_urls_hashtags(X, debug = True):
     """
         Add the features [NUMBER OF TAGS] and [NUMBER OF HASHTAGS]
