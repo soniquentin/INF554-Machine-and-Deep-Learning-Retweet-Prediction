@@ -126,21 +126,21 @@ if __name__ == "__main__":
 
     model_name = "rf8"
 
-    """
+
     #### ========  RF  ========
     scaler = train_model(alg = "RF",
                         model_name = model_name ,
                         #loss = "absolute_error",  #GB
                         bootstrap = True,  #RF
-                        max_depth = 90,
+                        max_depth = 20,
                         max_features = 1.0,
                         min_samples_leaf = 2,
                         min_samples_split = 2,
-                        n_estimators = 300,
+                        n_estimators = 500,
                         #objective = "reg:absoluteerror", #XGB
                         #eval_metric = "mae" #XGB
-                        random_state = 42)
-    """
+                        random_state = 41)
+
 
     #### ========  NNnetwork  ========
     """
@@ -151,8 +151,10 @@ if __name__ == "__main__":
                 validation_split = 0.2)
 
     process_model(model_name = model_name, compared_model = "third_submission", disagree_window = 15)
-    process_model(model_name = model_name, compared_model = "top_score", disagree_window = 15)
     """
+    process_model(model_name = model_name, compared_model = "top_score", disagree_window = 15)
 
+    """
     ##==========================================##
     random_search(n_iter = 75, model_name = model_name)
+    """
