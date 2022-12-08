@@ -36,3 +36,19 @@ if __name__ == "__main__":
                         #eval_metric = "mae" #XGB
                         random_state = 41)
 ```
+
+## Final Rank in the competition
+
+We reach the Top 10 out of 58 teams.
+
+| # | Team    | Score   |
+| 1  |  CaFAy | 5.09983 |
+| 2  |  Royals never give up | 5.15101 |
+| 3  |  Debug | 5.22905 |
+| 4  |  GetSomeFries | 5.26624 |
+| 5  |  Ragnarok | 5.32145 |
+| 6  |  BTS | 5.32673 |
+| 7  |  Hexa | 5.38552 |
+| 8  |  Team Lebron | 5.42237 |
+| 9  |  Les Kaggers | 5.43725 |
+| 10  |  Les hackers de l'extrême | 5.47227 |
